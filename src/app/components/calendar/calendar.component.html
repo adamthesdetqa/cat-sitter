@@ -1,0 +1,77 @@
+<div class="calendar">
+
+  @if (error()) {
+    <div class="calendar__error">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+      {{ error() }}
+    </div>
+  }
+
+  <div class="calendar__nav">
+    <button class="nav-btn" (click)="previousMonth()" aria-label="Previous month">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </button>
+    <h2 class="calendar__month-label">{{ currentMonthLabel() }}</h2>
+    <button class="nav-btn" (click)="nextMonth()" aria-label="Next month">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 18l6-6-6-6"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="calendar__weekdays">
+    @for (day of weekdays; track day) {
+      <div class="weekday">{{ day }}</div>
+    }
+  </div>
+
+  <div class="calendar__grid" [class.calendar__grid--loading]="loading()">
+    @if (loading()) {
+      @for (i of [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42]; track i) {
+        <div class="day day--skeleton"></div>
+      }
+    } @else {
+      @for (day of calendarDays(); track day.dateKey) {
+        <div
+          [ngClass]="getCellClass(day)"
+          (click)="onDayClick(day)"
+          [attr.aria-label]="day.dateKey"
+        >
+          @if (isSaving(day.dateKey)) {
+            <span class="day__spinner"></span>
+          } @else {
+            <span class="day__number">{{ day.dayOfMonth }}</span>
+            @if (day.status === 'available') {
+              <span class="day__paw" aria-label="Available">🐾</span>
+            }
+            @if (day.status === 'booked') {
+              <span class="day__badge day__badge--booked">Booked</span>
+            }
+            @if (isAdmin() && day.status === 'none' && day.isCurrentMonth && !day.isPast) {
+              <span class="day__hint">+</span>
+            }
+          }
+        </div>
+      }
+    }
+  </div>
+
+  @if (!isAdmin() && !loading()) {
+    <div class="calendar__legend">
+      <span class="legend-item">
+        <span class="legend-dot legend-dot--available"></span>
+        Available
+      </span>
+      <span class="legend-item">
+        <span class="legend-dot legend-dot--none"></span>
+        Not available
+      </span>
+    </div>
+  }
+
+  @if (isAdmin() && !loading()) {
+    <p class="admin-hint">Click any upcoming date to mark it available or unavailable. Changes sync instantly.</p>
+  }
+</div>

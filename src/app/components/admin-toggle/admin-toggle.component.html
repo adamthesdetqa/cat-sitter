@@ -1,0 +1,44 @@
+@if (!isAdmin() && !showLoginForm()) {
+  <button class="admin-link" (click)="openLogin()">
+    Cat sitter? Sign in
+  </button>
+}
+
+@if (isAdmin()) {
+  <div class="admin-bar">
+    <span class="admin-bar__label">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+      </svg>
+      Admin mode
+    </span>
+    <button class="admin-bar__logout" (click)="logout()">Sign out</button>
+  </div>
+}
+
+@if (showLoginForm()) {
+  <div class="login-overlay" (click)="cancelLogin()">
+    <div class="login-modal" (click)="$event.stopPropagation()">
+      <h3 class="login-modal__title">Cat sitter sign-in</h3>
+      <p class="login-modal__sub">Enter your PIN to manage availability</p>
+      <input
+        class="login-modal__input"
+        type="password"
+        inputmode="numeric"
+        maxlength="8"
+        placeholder="Enter PIN"
+        [value]="pin()"
+        (input)="onPinInput($event)"
+        (keydown)="onKeydown($event)"
+        autofocus
+      />
+      @if (error()) {
+        <p class="login-modal__error">{{ error() }}</p>
+      }
+      <div class="login-modal__actions">
+        <button class="btn btn--secondary" (click)="cancelLogin()">Cancel</button>
+        <button class="btn btn--primary" (click)="submitPin()">Sign in</button>
+      </div>
+    </div>
+  </div>
+}
