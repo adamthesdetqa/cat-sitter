@@ -86,3 +86,7 @@ typings/
 
 # DynamoDB Local files
 .dynamodb/
+
+# Firebase
+.firebase/
+firebase-debug.log*
