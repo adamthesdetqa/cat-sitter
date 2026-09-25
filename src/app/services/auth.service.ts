@@ -1,7 +1,7 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { Auth, user, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from '@angular/fire/auth';
-import { Firestore, doc, setDoc, getDoc } from '@angular/fire/firestore';
-import { Observable } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../environments/environment';
+import { firstValueFrom } from 'rxjs';
 
 export interface UserProfile {
   uid: string;
@@ -12,60 +12,31 @@ export interface UserProfile {
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private auth = inject(Auth);
-  private firestore = inject(Firestore);
-
-  user$ = user(this.auth);
+  private http = inject(HttpClient);
 
   private _profile = signal<UserProfile | null>(null);
+  private _token = signal<string | null>(null);
+
   readonly profile = this._profile.asReadonly();
+  readonly token = this._token.asReadonly();
 
   readonly isAdmin = computed(() => this._profile()?.role === 'admin');
   readonly isAuthenticated = computed(() => this._profile() !== null);
 
-  constructor() {
-    this.user$.subscribe(async (firebaseUser) => {
-      if (firebaseUser) {
-        // Fetch profile from Firestore
-        const docRef = doc(this.firestore, `users/${firebaseUser.uid}`);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          this._profile.set(docSnap.data() as UserProfile);
-        } else {
-          // Fallback if no profile exists yet
-          this._profile.set({
-            uid: firebaseUser.uid,
-            email: firebaseUser.email || '',
-            displayName: firebaseUser.displayName,
-            role: 'user'
-          });
-        }
-      } else {
-        this._profile.set(null);
-      }
-    });
-  }
-
   async login(email: string, pass: string) {
-    await signInWithEmailAndPassword(this.auth, email, pass);
+    const res: any = await firstValueFrom(this.http.post(`${environment.apiUrl}/auth/login`, { email, password: pass }));
+    this._token.set(res.token);
+    this._profile.set(res.profile);
   }
 
   async register(email: string, pass: string, name: string) {
-    const cred = await createUserWithEmailAndPassword(this.auth, email, pass);
-    await updateProfile(cred.user, { displayName: name });
-
-    // Default new users to 'user' role
-    const profile: UserProfile = {
-      uid: cred.user.uid,
-      email: email,
-      displayName: name,
-      role: 'user'
-    };
-    await setDoc(doc(this.firestore, `users/${cred.user.uid}`), profile);
-    this._profile.set(profile);
+    const res: any = await firstValueFrom(this.http.post(`${environment.apiUrl}/auth/register`, { email, password: pass, name }));
+    this._token.set(res.token);
+    this._profile.set(res.profile);
   }
 
-  async logout() {
-    await signOut(this.auth);
+  logout() {
+    this._profile.set(null);
+    this._token.set(null);
   }
 }

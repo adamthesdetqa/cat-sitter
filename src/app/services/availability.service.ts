@@ -1,6 +1,8 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { FirestoreService, AvailabilityRow } from './firestore.service';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from './auth.service';
+import { environment } from '../../environments/environment';
+import { firstValueFrom } from 'rxjs';
 
 export type DayStatus = 'available' | 'unavailable' | 'requested' | 'booked';
 
@@ -13,7 +15,7 @@ export interface DayEntry {
 
 @Injectable({ providedIn: 'root' })
 export class AvailabilityService {
-  private firestoreService = inject(FirestoreService);
+  private http = inject(HttpClient);
   private authService = inject(AuthService);
 
   private _days = signal<Record<string, DayEntry>>({});
@@ -33,35 +35,37 @@ export class AvailabilityService {
   );
 
   constructor() {
-    this.loadFromFirestore();
-    // Subscribe to realtime updates so changes sync instantly across devices
-    this.firestoreService.subscribeToChanges((rows) => {
-      this.updateDaysFromRows(rows);
-    });
+    this.loadFromBackend();
   }
 
-  private updateDaysFromRows(rows: AvailabilityRow[]) {
-      const map: Record<string, DayEntry> = {};
-      for (const row of rows) {
-        map[row.date_key] = {
-          dateKey: row.date_key,
-          status: row.status as DayStatus,
-          note: row.note ?? undefined,
-          requested_by: row.requested_by
-        };
-      }
-      this._days.set(map);
+  private getHeaders(): HttpHeaders {
+    let headers = new HttpHeaders();
+    const token = this.authService.token();
+    if (token) {
+        headers = headers.set('Authorization', `Bearer ${token}`);
+    }
+    return headers;
   }
 
-  private async loadFromFirestore(): Promise<void> {
+  private async loadFromBackend(): Promise<void> {
     try {
       this._loading.set(true);
       this._error.set(null);
-      const rows = await this.firestoreService.fetchAll();
-      this.updateDaysFromRows(rows);
+      const rows: any = await firstValueFrom(this.http.get(`${environment.apiUrl}/availability`));
+
+      const map: Record<string, DayEntry> = {};
+      for (const row of rows) {
+        map[row.dateKey] = {
+          dateKey: row.dateKey,
+          status: row.status as DayStatus,
+          note: row.note ?? undefined,
+          requested_by: row.requestedBy
+        };
+      }
+      this._days.set(map);
     } catch (err: any) {
-      this._error.set('Could not load availability. Check your Firebase config.');
-      console.error('Firebase load error:', err);
+      this._error.set('Could not load availability.');
+      console.error('Backend load error:', err);
     } finally {
       this._loading.set(false);
     }
@@ -73,67 +77,23 @@ export class AvailabilityService {
 
   async toggleAvailable(dateKey: string): Promise<void> {
     if (!this.isAdmin()) return;
-    const current = this._days()[dateKey];
 
-    // Optimistic update
-    const updated = { ...this._days() };
-
-    if (!current || current.status === 'unavailable') {
-      updated[dateKey] = { dateKey, status: 'available' };
-      this._days.set(updated);
-      try {
-        await this.firestoreService.upsert({ date_key: dateKey, status: 'available', note: null });
-      } catch (err) {
-        await this.loadFromFirestore();
-        throw err;
-      }
-    } else if (current.status === 'available') {
-      delete updated[dateKey];
-      this._days.set(updated);
-      try {
-        await this.firestoreService.remove(dateKey);
-      } catch (err) {
-        await this.loadFromFirestore();
-        throw err;
-      }
-    } else if (current.status === 'requested') {
-      // Mark requested as booked
-      updated[dateKey] = { ...current, status: 'booked' };
-      this._days.set(updated);
-      try {
-        await this.firestoreService.updateStatus(dateKey, { status: 'booked' });
-      } catch (err) {
-         await this.loadFromFirestore();
-         throw err;
-      }
-    } else if (current.status === 'booked') {
-        // Remove booking, back to available (or unavailable, but available is safer)
-      updated[dateKey] = { ...current, status: 'available', requested_by: undefined };
-      this._days.set(updated);
-      try {
-        await this.firestoreService.updateStatus(dateKey, { status: 'available', requested_by: '' }); // use empty string or null instead of omitting
-      } catch (err) {
-         await this.loadFromFirestore();
-         throw err;
-      }
+    try {
+        await firstValueFrom(this.http.post(`${environment.apiUrl}/availability/toggle`, { dateKey }, { headers: this.getHeaders() }));
+        await this.loadFromBackend();
+    } catch (err) {
+        console.error(err);
     }
   }
 
   async requestBooking(dateKey: string): Promise<void> {
       if (!this.isUser()) return;
-      const current = this._days()[dateKey];
-      const profile = this.authService.profile();
-      if (!profile || !current || current.status !== 'available') return;
-
-      const updated = { ...this._days() };
-      updated[dateKey] = { ...current, status: 'requested', requested_by: profile.uid };
-      this._days.set(updated);
 
       try {
-          await this.firestoreService.updateStatus(dateKey, { status: 'requested', requested_by: profile.uid });
+          await firstValueFrom(this.http.post(`${environment.apiUrl}/availability/request`, { dateKey }, { headers: this.getHeaders() }));
+          await this.loadFromBackend();
       } catch (err) {
-          await this.loadFromFirestore();
-          throw err;
+          console.error(err);
       }
   }
 }
