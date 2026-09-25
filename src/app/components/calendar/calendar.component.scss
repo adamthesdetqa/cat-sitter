@@ -148,6 +148,11 @@
       background: #D4956A;
       color: #fff;
     }
+
+    &--requested {
+      background: #E8C382;
+      color: #fff;
+    }
   }
 
   &--skeleton {
@@ -173,6 +178,8 @@
     animation: spin 0.6s linear infinite;
     display: block;
   }
+
+  &--other-month {
     opacity: 0.3;
   }
 
@@ -210,6 +217,13 @@
 
     &:hover {
       background: #b3dca9;
+    }
+  }
+
+  &--requested {
+    background: #fdf5e6;
+    .day__number {
+      color: #a87b32;
     }
   }
 

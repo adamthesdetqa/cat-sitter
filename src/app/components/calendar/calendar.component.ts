@@ -23,6 +23,7 @@ export class CalendarComponent {
   private availabilityService = inject(AvailabilityService);
 
   readonly isAdmin = this.availabilityService.isAdmin;
+  readonly isUser = this.availabilityService.isUser;
   readonly loading = this.availabilityService.loading;
   readonly error = this.availabilityService.error;
   readonly weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -94,12 +95,22 @@ export class CalendarComponent {
   }
 
   async onDayClick(day: CalendarDay): Promise<void> {
-    if (!this.isAdmin() || !day.isCurrentMonth || day.isPast || this._saving()) return;
-    this._saving.set(day.dateKey);
-    try {
-      await this.availabilityService.toggleAvailable(day.dateKey);
-    } finally {
-      this._saving.set(null);
+    if (!day.isCurrentMonth || day.isPast || this._saving()) return;
+
+    if (this.isAdmin()) {
+        this._saving.set(day.dateKey);
+        try {
+          await this.availabilityService.toggleAvailable(day.dateKey);
+        } finally {
+          this._saving.set(null);
+        }
+    } else if (this.isUser() && day.status === 'available') {
+        this._saving.set(day.dateKey);
+        try {
+            await this.availabilityService.requestBooking(day.dateKey);
+        } finally {
+            this._saving.set(null);
+        }
     }
   }
 
@@ -108,15 +119,18 @@ export class CalendarComponent {
   }
 
   getCellClass(day: CalendarDay): Record<string, boolean> {
+    const clickable = (this.isAdmin() && !day.isPast && day.isCurrentMonth && !this._saving()) ||
+                      (this.isUser() && day.status === 'available' && !day.isPast && day.isCurrentMonth && !this._saving());
     return {
       'day': true,
       'day--other-month': !day.isCurrentMonth,
       'day--today': day.isToday,
       'day--past': day.isPast && !day.isToday,
       'day--available': day.status === 'available',
+      'day--requested': day.status === 'requested',
       'day--booked': day.status === 'booked',
       'day--saving': this.isSaving(day.dateKey),
-      'day--admin-clickable': this.isAdmin() && day.isCurrentMonth && !day.isPast && !this._saving(),
+      'day--admin-clickable': clickable,
     };
   }
 }
