@@ -54,51 +54,122 @@ If a user has requested a date, you can click it to approve the booking:
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) 18 or newer
-- [PostgreSQL](https://www.postgresql.org/) installed and running locally
-- Angular CLI
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) or Docker engine with `docker compose`
+- A [GitHub](https://github.com) account (for hosting)
 
 ### Step 1 — Database Setup
 
-Ensure PostgreSQL is running, then create the database and user:
+### Running the Local Development Environment
 
-`sudo -u postgres psql`
-`CREATE DATABASE catsitter;`
-`ALTER USER postgres PASSWORD 'your_password';`
-`\q`
+We use Docker Compose to run the PostgreSQL database, the Node.js/Express backend, and the Angular frontend together seamlessly.
 
-### Step 2 — Backend Setup
+1. **Start the environment**
+   Simply run the start script in your terminal:
+   ```bash
+   ./start-dev.sh
+   ```
+   *(Or run `docker compose up` manually.)*
 
-1. Open a terminal and navigate to the `backend` folder.
-2. Install dependencies:
-   `npm install`
-3. Create a `.env` file in the `backend` folder:
-   `DATABASE_URL=postgres://postgres:your_password@localhost:5432/catsitter`
-   `JWT_SECRET=supersecretkey123`
-   `PORT=3000`
-4. Start the server (this will automatically sync the database tables):
-   `node src/index.js`
-   `# or use nodemon for development: npx nodemon src/index.js`
+2. **Access the application**
+   Once all services have started and dependencies are installed:
+   - **Frontend** is available at [http://localhost:4200](http://localhost:4200)
+   - **Backend API** is available at [http://localhost:3000](http://localhost:3000)
+   - **Database** is accessible on `localhost:5432`
 
-### Step 3 — Frontend Setup
+3. **Admin Setup**
+   By default, all users are given the `user` role. To grant admin privileges, connect to your local Postgres database and update the user. For example, if you register an account `your@email.com` in the app, you can give it admin rights:
+   ```bash
+   # In a new terminal, run:
+   docker compose exec db psql -U postgres -d catsitter -c "UPDATE \"Users\" SET role = 'admin' WHERE email = 'your@email.com';"
+   ```
 
-1. Open a new terminal and navigate to the root folder.
-2. Install dependencies:
-   `npm install`
-3. Ensure `src/environments/environment.ts` points to your local backend:
-   `export const environment = { production: false, apiUrl: 'http://localhost:3000/api' };`
-4. Start the Angular dev server:
-   `ng serve`
-5. Open `http://localhost:4200` in your browser.
+*(For more backend details, refer to `BACKEND.md`)*
 
-### Step 4 — Creating the Admin Account
+---
 
-1. On the frontend, click "Sign in" and toggle to the "Register" form.
-2. Create an account with your email, password, and name.
-3. Open your database (using a tool like DBeaver, pgAdmin, or psql).
-4. Run the following SQL to make yourself an admin:
-   `UPDATE "Users" SET role = 'admin' WHERE email = 'your@email.com';`
-5. Log out and log back in on the frontend to activate Admin mode.
+## Deploying to GitHub Pages
+
+GitHub Pages hosts the site for free at `https://YOUR_USERNAME.github.io/cat-sitter/`.
+
+### First deployment
+
+```bash
+# 1. Initialise git and push to GitHub
+git init
+git add .
+git commit -m "Initial commit"
+git branch -M main
+git remote add origin https://github.com/YOUR_USERNAME/cat-sitter.git
+git push -u origin main
+```
+
+If your GitHub repo is named something other than `cat-sitter`, update the base href in `package.json`:
+
+```json
+"build:prod": "ng build --configuration production --base-href /YOUR_REPO_NAME/"
+```
+
+```bash
+# 2. Build and deploy to GitHub Pages
+npm run deploy
+```
+
+This builds the Angular app for production and pushes the output to a `gh-pages` branch automatically.
+
+```
+# 3. Enable GitHub Pages in your repo settings:
+#    Settings → Pages → Source: Deploy from branch → gh-pages → / (root) → Save
+```
+
+Your site will be live at `https://YOUR_USERNAME.github.io/cat-sitter/` within a minute or two.
+
+### Subsequent deployments
+
+Any time you make changes to the code or update your PIN:
+
+```bash
+npm run deploy
+```
+
+That's it. No other steps needed.
+
+---
+
+## Making changes to the site
+
+### Changing the site name / tagline / footer
+
+Open `src/app/app.component.html`. Near the top you'll find:
+
+```html
+<h1 class="header__title">Purrfect Cat Sitting</h1>
+<p class="header__tagline">Your cats are safe with me</p>
+```
+
+And at the bottom:
+
+```html
+<p>Have questions? Get in touch to book a date.</p>
+```
+
+Edit these freely. After saving, run `npm run deploy` to publish the change.
+
+### Changing colours
+
+The colour palette is defined in the component SCSS files. The main colours used throughout are:
+
+| Colour | Hex | Used for |
+|--------|-----|----------|
+| Deep teal | `#2C4A43` | Headings, text |
+| Sage green | `#4A7C6F` | Buttons, accents |
+| Mint | `#C8E6C0` | Available dates background |
+| Warm cream | `#F7F4EF` | Page background |
+| Terracotta | `#D4956A` | Today indicator, booked dates |
+| Off-white | `#E8E0D5` | Borders, today cell |
+
+### Changing your PIN
+
+Edit `adminPin` in both environment files (see Step 5 above), then run `npm run deploy`.
 
 ---
 
