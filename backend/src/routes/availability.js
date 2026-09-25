@@ -1,5 +1,5 @@
 const express = require('express');
-const Availability = require('../models/Availability');
+const db = require('../db');
 const { authenticate, authorizeAdmin } = require('../middleware/auth');
 
 const router = express.Router();
@@ -7,7 +7,8 @@ const router = express.Router();
 // Get all availability records
 router.get('/', async (req, res) => {
   try {
-    const records = await Availability.findAll();
+    const snapshot = await db.collection('availability').get();
+    const records = snapshot.docs.map(doc => doc.data());
     res.json(records);
   } catch (err) {
     console.error(err);
@@ -20,16 +21,20 @@ router.post('/toggle', authenticate, authorizeAdmin, async (req, res) => {
   try {
     const { dateKey } = req.body;
 
-    const existing = await Availability.findOne({ where: { dateKey } });
+    const docRef = db.collection('availability').doc(dateKey);
+    const doc = await docRef.get();
 
-    if (!existing || existing.status === 'unavailable') {
-      await Availability.upsert({ dateKey, status: 'available' });
-    } else if (existing.status === 'available') {
-      await Availability.destroy({ where: { dateKey } });
-    } else if (existing.status === 'requested') {
-      await Availability.update({ status: 'booked' }, { where: { dateKey } });
-    } else if (existing.status === 'booked') {
-      await Availability.update({ status: 'available', requestedBy: null }, { where: { dateKey } });
+    if (!doc.exists || doc.data().status === 'unavailable') {
+      await docRef.set({ dateKey, status: 'available', requestedBy: null });
+    } else {
+      const status = doc.data().status;
+      if (status === 'available') {
+        await docRef.delete();
+      } else if (status === 'requested') {
+        await docRef.update({ status: 'booked' });
+      } else if (status === 'booked') {
+        await docRef.update({ status: 'available', requestedBy: null });
+      }
     }
 
     res.json({ success: true });
@@ -45,13 +50,14 @@ router.post('/request', authenticate, async (req, res) => {
     const { dateKey } = req.body;
     const userId = req.user.uid;
 
-    const existing = await Availability.findOne({ where: { dateKey } });
+    const docRef = db.collection('availability').doc(dateKey);
+    const doc = await docRef.get();
 
-    if (!existing || existing.status !== 'available') {
+    if (!doc.exists || doc.data().status !== 'available') {
       return res.status(400).json({ error: 'Date is not available for booking' });
     }
 
-    await Availability.update({ status: 'requested', requestedBy: userId }, { where: { dateKey } });
+    await docRef.update({ status: 'requested', requestedBy: userId });
 
     res.json({ success: true });
   } catch (err) {

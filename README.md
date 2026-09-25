@@ -2,8 +2,7 @@
 
 A website for your cat-sitting business. Customers visit to see which dates you're available and can register to request a booking. You manage everything yourself as an Admin—approving requests, marking dates as unavailable, or opening up new dates on your calendar.
 
-Built with **Angular 19** on the frontend, and a **Node.js/Express** backend using **PostgreSQL** (via Sequelize) for the database.
-
+Built with **Angular 19** on the frontend, and a **Node.js/Express** backend using **Firebase Firestore** for the database (wrapped in a Firebase Cloud Function).
 ---
 
 ## Table of contents
@@ -54,84 +53,70 @@ If a user has requested a date, you can click it to approve the booking:
 
 ### Prerequisites
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) or Docker engine with `docker compose`
-- A [GitHub](https://github.com) account (for hosting)
-
-### Step 1 — Database Setup
+- [Node.js](https://nodejs.org/) (v20+ recommended)
+- A [Firebase](https://firebase.google.com) account and project
 
 ### Running the Local Development Environment
 
-We use Docker Compose to run the PostgreSQL database, the Node.js/Express backend, and the Angular frontend together seamlessly.
+We can run the Angular frontend and Node.js backend locally. Since we are using Firestore, you will need to either set up a Firebase project and authenticate locally, or use the Firebase Emulators.
 
-1. **Start the environment**
-   Simply run the start script in your terminal:
+1. **Start the backend server**
+   Open a terminal and start the Express server (which connects to your Firebase project):
    ```bash
-   ./start-dev.sh
+   cd backend
+   npm install
+   npm start
    ```
-   *(Or run `docker compose up` manually.)*
 
-2. **Access the application**
-   Once all services have started and dependencies are installed:
-   - **Frontend** is available at [http://localhost:4200](http://localhost:4200)
-   - **Backend API** is available at [http://localhost:3000](http://localhost:3000)
-   - **Database** is accessible on `localhost:5432`
+2. **Start the frontend**
+   Open a second terminal and serve the Angular app:
+   ```bash
+   npm install
+   npm run start
+   ```
+   The frontend is available at [http://localhost:4200](http://localhost:4200). It will proxy API requests to `http://localhost:3000`.
 
 3. **Admin Setup**
-   By default, all users are given the `user` role. To grant admin privileges, connect to your local Postgres database and update the user. For example, if you register an account `your@email.com` in the app, you can give it admin rights:
-   ```bash
-   # In a new terminal, run:
-   docker compose exec db psql -U postgres -d catsitter -c "UPDATE \"Users\" SET role = 'admin' WHERE email = 'your@email.com';"
-   ```
+   By default, all users are given the `user` role. To grant admin privileges, log into the Firebase Console, go to your Firestore Database, find your user in the `users` collection, and change the `role` field from `user` to `admin`.
 
-*(For more backend details, refer to `BACKEND.md`)*
+*(For more backend details, refer to `BACKEND.md` and `FIREBASE.md`)*
 
 ---
 
-## Deploying to GitHub Pages
+## Deploying to Firebase
 
-GitHub Pages hosts the site for free at `https://YOUR_USERNAME.github.io/cat-sitter/`.
+Firebase hosts the frontend (Hosting), backend API (Cloud Functions), and database (Firestore) all in one place.
 
 ### First deployment
 
-```bash
-# 1. Initialise git and push to GitHub
-git init
-git add .
-git commit -m "Initial commit"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/cat-sitter.git
-git push -u origin main
-```
+1. **Install Firebase CLI**
+   ```bash
+   npm install -g firebase-tools
+   firebase login
+   ```
 
-If your GitHub repo is named something other than `cat-sitter`, update the base href in `package.json`:
+2. **Link your Firebase Project**
+   Create a new project in the [Firebase Console](https://console.firebase.google.com/), enable **Firestore**, **Hosting**, and **Functions**, then run:
+   ```bash
+   firebase use --add
+   ```
 
-```json
-"build:prod": "ng build --configuration production --base-href /YOUR_REPO_NAME/"
-```
+3. **Deploy everything**
+   Build the Angular app and deploy both the frontend and the cloud functions:
+   ```bash
+   npm run build
+   firebase deploy
+   ```
 
-```bash
-# 2. Build and deploy to GitHub Pages
-npm run deploy
-```
-
-This builds the Angular app for production and pushes the output to a `gh-pages` branch automatically.
-
-```
-# 3. Enable GitHub Pages in your repo settings:
-#    Settings → Pages → Source: Deploy from branch → gh-pages → / (root) → Save
-```
-
-Your site will be live at `https://YOUR_USERNAME.github.io/cat-sitter/` within a minute or two.
+Your site will be live at your Firebase project's `.web.app` or `.firebaseapp.com` domain.
 
 ### Subsequent deployments
 
-Any time you make changes to the code or update your PIN:
-
+Any time you make changes to the code:
 ```bash
-npm run deploy
+npm run build
+firebase deploy
 ```
-
-That's it. No other steps needed.
 
 ---
 
@@ -175,13 +160,13 @@ Edit `adminPin` in both environment files (see Step 5 above), then run `npm run 
 
 ## Project structure
 
-* `backend/` - Node.js / Express Backend
+* `backend/` - Node.js / Express Backend (Cloud Function)
   * `src/middleware/` - JWT Authentication middleware
-  * `src/models/` - Sequelize Models (User, Availability)
   * `src/routes/` - API Routes (auth, availability)
-  * `src/db.js` - Database connection
-  * `src/index.js` - Express App entry point
+  * `src/db.js` - Firebase Admin / Firestore initialization
+  * `src/index.js` - Express App entry point / Firebase Cloud Function wrapper
 * `src/` - Angular Frontend
   * `app/components/` - Calendar, AdminToggle
   * `app/services/` - AuthService, AvailabilityService
-
+* `firebase.json` - Deployment configuration for Firebase Hosting and Functions
+* `FIREBASE.md` - Context for agents and developers on the Firebase migration

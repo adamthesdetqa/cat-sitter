@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const sequelize = require('./db');
+const functions = require('firebase-functions');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
@@ -15,9 +15,12 @@ app.use('/api/availability', availabilityRoutes);
 
 const PORT = process.env.PORT || 3000;
 
-sequelize.sync({ alter: true }).then(() => {
-  console.log('Database synced');
+if (require.main === module) {
+  // Only start the server if this file is run directly (local development)
   app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
   });
-}).catch(err => console.error('Unable to connect to the database:', err));
+}
+
+// Export the Express app as a Firebase Cloud Function
+exports.api = functions.https.onRequest(app);
