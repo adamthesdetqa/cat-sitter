@@ -46,6 +46,9 @@
             @if (day.status === 'available') {
               <span class="day__paw" aria-label="Available">🐾</span>
             }
+            @if (day.status === 'requested') {
+              <span class="day__badge day__badge--requested">Requested</span>
+            }
             @if (day.status === 'booked') {
               <span class="day__badge day__badge--booked">Booked</span>
             }
@@ -72,6 +75,8 @@
   }
 
   @if (isAdmin() && !loading()) {
-    <p class="admin-hint">Click any upcoming date to mark it available or unavailable. Changes sync instantly.</p>
+    <p class="admin-hint">Click any upcoming date to cycle status: Available -> Requested -> Booked -> Not Available.</p>
+  } @else if (isUser() && !loading()) {
+    <p class="admin-hint">Click any available date to request a booking.</p>
   }
 </div>

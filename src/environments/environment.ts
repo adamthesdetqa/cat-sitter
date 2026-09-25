@@ -1,8 +1,11 @@
 export const environment = {
   production: false,
-  supabase: {
-    url: 'YOUR_SUPABASE_URL',       // e.g. https://xyzxyz.supabase.co
-    anonKey: 'YOUR_SUPABASE_ANON_KEY'
-  },
-  adminPin: '1234' // Change this to your preferred PIN
+  firebase: {
+    projectId: 'YOUR_PROJECT_ID',
+    appId: 'YOUR_APP_ID',
+    storageBucket: 'YOUR_STORAGE_BUCKET',
+    apiKey: 'YOUR_API_KEY',
+    authDomain: 'YOUR_AUTH_DOMAIN',
+    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
+  }
 };
