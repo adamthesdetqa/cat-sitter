@@ -14,19 +14,18 @@ This application consists of a decoupled frontend and backend:
 *   **HTTP Client:** `@angular/common/http`
 
 ### Backend
-*   **Framework:** Node.js with Express.js
+*   **Framework:** Node.js with Express.js (Deployed as a Firebase Cloud Function)
 *   **Language:** JavaScript (CommonJS)
-*   **Database:** PostgreSQL
-*   **ORM:** Sequelize
+*   **Database:** Firebase Firestore (NoSQL)
+*   **SDK:** `firebase-admin`
 *   **Authentication:** JSON Web Tokens (JWT) using `jsonwebtoken` and `bcrypt` for password hashing.
 
 ## Key Files and Directories
 
-*   `backend/`: Contains the entire Node.js Express server.
-    *   `src/index.js`: Entry point. Connects to DB and registers routes.
-    *   `src/db.js`: Sequelize configuration.
-    *   `src/models/`: Sequelize models (`User`, `Availability`).
-    *   `src/routes/`: Express routers (`auth.js`, `availability.js`).
+*   `backend/`: Contains the Node.js Express server.
+    *   `src/index.js`: Entry point. Wraps the Express app as a Cloud Function (`exports.api`).
+    *   `src/db.js`: Initializes Firebase Admin SDK and Firestore.
+    *   `src/routes/`: Express routers (`auth.js`, `availability.js`) that interact with Firestore.
     *   `src/middleware/auth.js`: JWT verification and role-based authorization middlewares.
 *   `src/app/services/`: Angular services.
     *   `auth.service.ts`: Handles user registration, login, logout, and token management.
@@ -35,15 +34,26 @@ This application consists of a decoupled frontend and backend:
     *   `calendar/`: Renders the grid and handles click events.
     *   `admin-toggle/`: The authentication modal (login/register) and header display.
 
-## How to Run the App
+## How to Run the App Locally
 
-You will need to run the frontend and backend in separate terminal sessions or processes.
+Since the app now uses Firestore instead of PostgreSQL, Docker is no longer required. You have two options for local development:
 
-### 1. Start the Backend
-`cd backend`
-`npm install`
-`node src/index.js`
-*Note: The backend expects a PostgreSQL database named `catsitter` to be running. It uses the `DATABASE_URL` environment variable (defaults to `postgres://postgres:postgres@localhost:5432/catsitter`).*
+### Option A: Connect to Live Firebase (Recommended)
+You can run the backend locally but point it to your live Firebase project database.
+1. Download a Service Account Key from your Firebase Console (Project Settings -> Service Accounts -> Generate new private key).
+2. Save it locally (e.g., in the `backend/` folder as `serviceAccountKey.json`, make sure it's in `.gitignore`).
+3. Set the environment variable before starting the backend:
+   ```bash
+   export GOOGLE_APPLICATION_CREDENTIALS="./serviceAccountKey.json"
+   cd backend
+   npm start
+   ```
+4. Run the frontend in another terminal: `npm start`
+
+### Option B: Use Firebase Emulators
+To test completely offline without connecting to the cloud:
+1. Run `firebase emulators:start` to spin up a local Firestore instance.
+2. Ensure your backend code is configured to point to the local emulator.
 
 ### 2. Start the Frontend
 `npm install`

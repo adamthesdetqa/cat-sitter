@@ -90,3 +90,8 @@ typings/
 # Firebase
 .firebase/
 firebase-debug.log*
+serviceAccountKey*.json
+
+# Angular
+.angular/
+dist/

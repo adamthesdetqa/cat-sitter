@@ -53,52 +53,39 @@ If a user has requested a date, you can click it to approve the booking:
 
 ### Prerequisites
 
-- Node.js 18 or newer
-- PostgreSQL installed and running locally
-- Angular CLI
+- [Node.js](https://nodejs.org/) (v20+ recommended)
+- [pnpm](https://pnpm.io/) package manager
+- A [Firebase](https://firebase.google.com) account and project
 
-### Step 1 — Database Setup
+### Get your Firebase Credentials
 
-Ensure PostgreSQL is running, then create the database and user:
+Because this project uses Firebase Firestore, your local Node.js server needs permission to access your Firebase project database.
 
-`sudo -u postgres psql`
-`CREATE DATABASE catsitter;`
-`ALTER USER postgres PASSWORD 'your_password';`
-`\q`
+1. Go to your [Firebase Console](https://console.firebase.google.com/) -> **Project Settings** (the gear icon) -> **Service Accounts**.
+2. Click **"Generate new private key"**.
+3. Save the downloaded `.json` file into the `backend/` folder and name it `serviceAccountKey.json`.
+   *(You can view `backend/serviceAccountKey.example.json` to see what it should look like).*
 
-### Step 2 — Backend Setup
+### Running the Local Development Environment
 
-1. Open a terminal and navigate to the `backend` folder.
-2. Install dependencies:
-   `npm install`
-3. Create a `.env` file in the `backend` folder:
-   `DATABASE_URL=postgres://postgres:your_password@localhost:5432/catsitter`
-   `JWT_SECRET=supersecretkey123`
-   `PORT=3000`
-4. Start the server (this will automatically sync the database tables):
-   `node src/index.js`
-   `# or use nodemon for development: npx nodemon src/index.js`
+You can run both the frontend and the backend simultaneously using our `dev` script:
 
-### Step 3 — Frontend Setup
+```bash
+pnpm install
+cd backend && npm install && cd ..
+pnpm run dev
+```
 
-1. Open a new terminal and navigate to the root folder.
-2. Install dependencies:
-   `npm install`
-3. Ensure `src/environments/environment.ts` points to your local backend:
-   `export const environment = { production: false, apiUrl: 'http://localhost:3000/api' };`
-4. Start the Angular dev server:
-   `ng serve`
-5. Open `http://localhost:4200` in your browser.
+- The **Frontend** will be available at [http://localhost:4200](http://localhost:4200) and automatically proxy API requests to the backend.
+- The **Backend API** runs at `http://localhost:3000`.
 
-### Step 4 — Creating the Admin Account
+### Admin Setup
 
-1. On the frontend, click "Sign in" and toggle to the "Register" form.
-2. Create an account with your email, password, and name.
-3. Open your database (using a tool like DBeaver, pgAdmin, or psql).
-4. Run the following SQL to make yourself an admin:
-   `UPDATE "Users" SET role = 'admin' WHERE email = 'your@email.com';`
-5. Log out and log back in on the frontend to activate Admin mode.
-
+By default, all users are given the `user` role. To grant admin privileges:
+1. Register an account on your local frontend.
+2. Log into the Firebase Console and go to your Firestore Database.
+3. Find your user in the `users` collection and change the `role` field from `user` to `admin`.
+4. Log out and log back in on the frontend to activate Admin mode.
 ---
 
 ## Project structure
