@@ -12,7 +12,7 @@ router.post('/register', async (req, res) => {
 
     const usersRef = db.collection('users');
     const snapshot = await usersRef.where('email', '==', email).get();
-    
+
     if (!snapshot.empty) {
       return res.status(400).json({ error: 'User already exists' });
     }
@@ -50,7 +50,7 @@ router.post('/login', async (req, res) => {
 
     const usersRef = db.collection('users');
     const snapshot = await usersRef.where('email', '==', email).get();
-    
+
     if (snapshot.empty) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }

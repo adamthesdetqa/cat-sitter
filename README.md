@@ -53,108 +53,51 @@ If a user has requested a date, you can click it to approve the booking:
 
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) (v20+ recommended)
-- A [Firebase](https://firebase.google.com) account and project
+- Node.js 18 or newer
+- PostgreSQL installed and running locally
+- Angular CLI
 
-### Running the Local Development Environment
+### Step 1 — Database Setup
 
-We can run the Angular frontend and Node.js backend locally. Since we are using Firestore, you will need to either set up a Firebase project and authenticate locally, or use the Firebase Emulators.
+Ensure PostgreSQL is running, then create the database and user:
 
-1. **Start the backend server**
-   Open a terminal and start the Express server (which connects to your Firebase project):
-   ```bash
-   cd backend
-   npm install
-   npm start
-   ```
+`sudo -u postgres psql`
+`CREATE DATABASE catsitter;`
+`ALTER USER postgres PASSWORD 'your_password';`
+`\q`
 
-2. **Start the frontend**
-   Open a second terminal and serve the Angular app:
-   ```bash
-   npm install
-   npm run start
-   ```
-   The frontend is available at [http://localhost:4200](http://localhost:4200). It will proxy API requests to `http://localhost:3000`.
+### Step 2 — Backend Setup
 
-3. **Admin Setup**
-   By default, all users are given the `user` role. To grant admin privileges, log into the Firebase Console, go to your Firestore Database, find your user in the `users` collection, and change the `role` field from `user` to `admin`.
+1. Open a terminal and navigate to the `backend` folder.
+2. Install dependencies:
+   `npm install`
+3. Create a `.env` file in the `backend` folder:
+   `DATABASE_URL=postgres://postgres:your_password@localhost:5432/catsitter`
+   `JWT_SECRET=supersecretkey123`
+   `PORT=3000`
+4. Start the server (this will automatically sync the database tables):
+   `node src/index.js`
+   `# or use nodemon for development: npx nodemon src/index.js`
 
-*(For more backend details, refer to `BACKEND.md` and `FIREBASE.md`)*
+### Step 3 — Frontend Setup
 
----
+1. Open a new terminal and navigate to the root folder.
+2. Install dependencies:
+   `npm install`
+3. Ensure `src/environments/environment.ts` points to your local backend:
+   `export const environment = { production: false, apiUrl: 'http://localhost:3000/api' };`
+4. Start the Angular dev server:
+   `ng serve`
+5. Open `http://localhost:4200` in your browser.
 
-## Deploying to Firebase
+### Step 4 — Creating the Admin Account
 
-Firebase hosts the frontend (Hosting), backend API (Cloud Functions), and database (Firestore) all in one place.
-
-### First deployment
-
-1. **Install Firebase CLI**
-   ```bash
-   npm install -g firebase-tools
-   firebase login
-   ```
-
-2. **Link your Firebase Project**
-   Create a new project in the [Firebase Console](https://console.firebase.google.com/), enable **Firestore**, **Hosting**, and **Functions**, then run:
-   ```bash
-   firebase use --add
-   ```
-
-3. **Deploy everything**
-   Build the Angular app and deploy both the frontend and the cloud functions:
-   ```bash
-   npm run build
-   firebase deploy
-   ```
-
-Your site will be live at your Firebase project's `.web.app` or `.firebaseapp.com` domain.
-
-### Subsequent deployments
-
-Any time you make changes to the code:
-```bash
-npm run build
-firebase deploy
-```
-
----
-
-## Making changes to the site
-
-### Changing the site name / tagline / footer
-
-Open `src/app/app.component.html`. Near the top you'll find:
-
-```html
-<h1 class="header__title">Purrfect Cat Sitting</h1>
-<p class="header__tagline">Your cats are safe with me</p>
-```
-
-And at the bottom:
-
-```html
-<p>Have questions? Get in touch to book a date.</p>
-```
-
-Edit these freely. After saving, run `npm run deploy` to publish the change.
-
-### Changing colours
-
-The colour palette is defined in the component SCSS files. The main colours used throughout are:
-
-| Colour | Hex | Used for |
-|--------|-----|----------|
-| Deep teal | `#2C4A43` | Headings, text |
-| Sage green | `#4A7C6F` | Buttons, accents |
-| Mint | `#C8E6C0` | Available dates background |
-| Warm cream | `#F7F4EF` | Page background |
-| Terracotta | `#D4956A` | Today indicator, booked dates |
-| Off-white | `#E8E0D5` | Borders, today cell |
-
-### Changing your PIN
-
-Edit `adminPin` in both environment files (see Step 5 above), then run `npm run deploy`.
+1. On the frontend, click "Sign in" and toggle to the "Register" form.
+2. Create an account with your email, password, and name.
+3. Open your database (using a tool like DBeaver, pgAdmin, or psql).
+4. Run the following SQL to make yourself an admin:
+   `UPDATE "Users" SET role = 'admin' WHERE email = 'your@email.com';`
+5. Log out and log back in on the frontend to activate Admin mode.
 
 ---
 
